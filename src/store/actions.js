@@ -2,12 +2,12 @@ import {reqLogin,reqRegister,reqUpdateUser,reqUser,reqUserList,reqChatMsgList,re
 import {AUTH_SUCCESS,ERROR_MSG,RECEIVE_USER,RESET_USER,RECEIVE_USER_LIST,RECEIVE_MSG_LIST,RECEIVE_MSG,MSG_READ} from './actionTypes';
 import {getRedirectPath} from '../utils';
 import io from 'socket.io-client';
-
+let uid;//解决initIO函数里面on异步监听BUG
 
 // 注册/登陆失败的同步action
 const errorMsg = (msg) => ({type: ERROR_MSG, data:{msg}});
 // 重置用户的同步action
-export const resetUser = (msg) => ({type: RESET_USER, data: msg});
+export const resetUser = (msg) =>({type: RESET_USER, data: msg});
 // 接收消息列表的同步 action
 const receiveMsgList = ({users, chatMsgs, userid}) => ({type: RECEIVE_MSG_LIST, data:
         {users, chatMsgs, userid}});
@@ -26,7 +26,8 @@ export let userLogin= (username,password)=>{
    return async dispatch=>{
         let result = await reqLogin(username,password);
         if(parseFloat(result.data.code)===0){
-            getMsgList(dispatch,result.data.data._id);
+            uid = result.data.data._id;
+            getMsgList(dispatch,uid);
             dispatch({
                 type:AUTH_SUCCESS,
                 data:{username:result.data.data.username, type:result.data.data.type,redirectTo:getRedirectPath(result.data.data.type)}
@@ -54,7 +55,8 @@ export let userRegister= ({username,password,password2,type})=>{
     return async dispatch=>{
         let result = await reqRegister({username,password,type});
         if(parseFloat(result.data.code)===0){
-            getMsgList(dispatch,result.data.data._id);
+            uid = result.data.data._id;
+            getMsgList(dispatch,uid);
             dispatch({
                 type:AUTH_SUCCESS,
                 data:{username:result.data.data.username, type:result.data.data.type,redirectTo:getRedirectPath(result.data.data.type)}
@@ -95,7 +97,8 @@ export function getUser() {
         const result = response.data;
         // 分发同步action
         if(result.code===0) {// 成功得到user
-            getMsgList(dispatch,result.data._id);
+            uid = result.data._id;
+            getMsgList(dispatch,uid);
             dispatch({type: RECEIVE_USER, data: result.data})
         } else { // 失败
             dispatch({type: RESET_USER, data: result.msg})
@@ -123,14 +126,15 @@ export function getUserList(type) {
 1. 连接服务器
 2. 绑定用于接收服务器返回 chatMsg 的监听
 */
-function initIO(dispatch, userid) {
+
+function initIO(dispatch) {
     if(!io.socket) {
         io.socket = io('ws://localhost:3001');
         //监听服务器发过来的消息
         io.socket.on('receiveMsg', (chatMsg) => {
             //我发的或者发给我的
-            if(chatMsg.from===userid || chatMsg.to===userid) {
-                let isToMe = (chatMsg.to === userid);
+            if(chatMsg.from===uid || chatMsg.to===uid) {
+                let isToMe = (chatMsg.to === uid);
                 dispatch({type: RECEIVE_MSG, data: {chatMsg, isToMe}});
             }
         })
@@ -155,7 +159,8 @@ export const sendMsg = ({from, to, content}) => {
 (在注册!登陆!获取用户信息成功后调用)
 */
 async function getMsgList(dispatch, userid) {
-    initIO(dispatch, userid);//链接服务器，监听服务器的回应
+    uid = userid;
+    initIO(dispatch, uid);//链接服务器，监听服务器的回应
     const response = await reqChatMsgList();
     const result = response.data;
     if(result.code===0) {
