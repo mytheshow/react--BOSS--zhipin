@@ -1,0 +1,30 @@
+/*固定在底部*/
+.am-tab-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  /*继承父类高度，inherit继承父类的属性，这里父元素是高度属性是auto，这里height:100%，就会覆盖整个盒子，退出登陆无法点击*/
+  /*height:100%，就是父类多高，我多高，父类通过撑开已经是屏幕高度了，所以这里子类不能设置height:100%*/
+  height:auto;/*或者height:inherit*/
+}
+
+
+.header-fixed{
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+/*消息文本居右*/
+#chat-page .chat-me .am-list-extra {
+  flex-basis: auto; /*宽度包裹内容*/
+}
+#chat-page .chat-me .am-list-content {
+  padding-right: 15px;
+  text-align: right;
+}
+
+.am-result{
+  margin-top: 15px;
+}
